@@ -9,4 +9,5 @@ services:
     volumes:
       - ./app:/app
     command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      sh -c "set COMPOSE_CONVERT_WINDOWS_PATHS=1";
+      sh -c "python manage.py runserver 0.0.0.0:8000";
