@@ -6,8 +6,10 @@ from django.contrib.auth import get_user_model
 class AdminSiteTests(TestCase):
 
     def setUp(self):
+
         self.client = Client()
-        self.admin  = get_user_model().objects.create_superuser('seb@wp.pl', '123')
+        self.admin = get_user_model().objects.create_superuser(
+            'seb@wp.pl', '123')
         self.client.force_login(self.admin)
 
         self.user = get_user_model().objects.create_user(
@@ -24,7 +26,10 @@ class AdminSiteTests(TestCase):
         self.assertContains(res, self.user.email)
 
     def test_user_change_page(self):
-        url = reverse('admin:core_user_change', args=[self.user.id])
+        url = reverse(
+            'admin:core_user_change',
+            args=[self.user.id]
+            )
         res = self.client.get(url)
 
         self.assertTrue(res.status_code, 200)
@@ -34,7 +39,3 @@ class AdminSiteTests(TestCase):
         res = self.client.get(url)
 
         self.assertTrue(res.status_code, 200)
-
-
-
-
