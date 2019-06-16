@@ -5,5 +5,6 @@ app_name = 'user'
 
 urlpatterns = [
     path('create/', views.UserCreateAPI.as_view(), name='create_user'),
-    path('token/', views.TokenCreateAPI.as_view(), name='token')
+    path('token/', views.TokenCreateAPI.as_view(), name='token'),
+    path('me/', views.UserManageAPI.as_view(), name='me')
 ]
