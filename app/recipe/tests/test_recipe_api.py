@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.urls import resolve
+from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -51,7 +51,7 @@ class PrivateRecipeAPI(TestCase):
         create_sample_recipe(user=self.user)
         create_sample_recipe(user=self.user, title='Snack')
 
-        recipes = Recipe.objects.all()
+        recipes = Recipe.objects.all().order_by('-id')
         serializer = RecipeSerializer(recipes, many=True)
 
         res = self.client.get(RECIPE_URL)
@@ -66,13 +66,15 @@ class PrivateRecipeAPI(TestCase):
             email='waldek@wp.pl',
             password='correctpass'
         )
-        recipe = create_sample_recipe(user=self.user)
+        recipe1 = create_sample_recipe(user=self.user)
         create_sample_recipe(user=user2)
+
+        recipe = Recipe.objects.filter(user=self.user)
 
         serializer = RecipeSerializer(recipe, many=True)
 
         res = self.client.get(RECIPE_URL)
 
-        self.assertEqual(len(serializer.data), len(res.data))
+        self.assertEqual(res.data, serializer.data)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data[0]['title'], recipe.title)
+        self.assertEqual(res.data[0]['title'], recipe1.title)
