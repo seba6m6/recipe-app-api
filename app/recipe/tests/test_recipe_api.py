@@ -1,3 +1,7 @@
+import os
+import tempfile
+from PIL import Image
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -11,6 +15,9 @@ from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 RECIPE_URL = reverse('recipe:recipe-list')
 
+def create_upload_image_url(recipe_id):
+    """Returns a url for image upload of the recipe"""
+    return reverse('recipe:recipe-image-upload', args=[recipe_id, ])
 
 def create_detail_url(recipe_id):
     return reverse('recipe:recipe-detail', args=[recipe_id, ])
@@ -194,3 +201,44 @@ class PrivateRecipeAPI(TestCase):
         self.assertEqual(recipe.title, payload['title'])
         self.assertEqual(recipe.time_minutes, payload['time_minutes'])
         self.assertEqual(len(ingredients), 0)
+
+
+class RecipeImageAPI(TestCase):
+    """Tests with the Recipe image upload"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email='seba@wp.pl',
+            password='correctpass'
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_sample_recipe(
+            user=self.user,
+            title="Chiling salad"
+        )
+    def tearDown(self):
+        self.recipe.image.delete()
+
+    def test_upload_image_to_recipe(self):
+        """Tests uploading an image to Recipe API"""
+        url = create_upload_image_url(self.recipe.id)
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
+            image = Image.new("RGB", (10, 10))
+            image.save(ntf, format='JPEG')
+            ntf.seek(0)
+            res = self.client.post(url, {'image': ntf}, format="multipart")
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_invalid_image_field(self):
+        """Test with uploading invalid image field"""
+        url = create_upload_image_url(self.recipe.id)
+
+        res = self.client.post(url, {"image": "not_image"}, format="multipart")
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
