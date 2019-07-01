@@ -260,10 +260,14 @@ class RecipeImageAPI(TestCase):
 
         res = self.client.get( RECIPE_URL, {"tags": f"{tag1.id}, {tag2.id}"})
 
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(recipe1, res.data)
-        self.assertIn(recipe2, res.data)
-        self.assertNotIn(recipe3, res.data)
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
 
     def test_filtering_recipes_with_ingredients(self):
         """Testing that only the recipes with ingredients are getting retrieved"""
@@ -279,8 +283,12 @@ class RecipeImageAPI(TestCase):
 
         res = self.client.get(RECIPE_URL, {"ingredients": f"{ingredient1.id}, {ingredient2.id}"})
 
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
         self.assertTrue(res.status_code, status.HTTP_200_OK)
-        self.assertIn(recipe1, res.data)
-        self.assertIn(recipe2, res.data)
-        self.assertNotIn(recipe3, res.data)
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
 
