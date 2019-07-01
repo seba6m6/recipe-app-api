@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from core.models import Recipe, Tag, Ingredient
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
+from decimal import Decimal
 
 
 RECIPE_URL = reverse('recipe:recipe-list')
@@ -117,12 +118,14 @@ class PrivateRecipeAPI(TestCase):
         """Test creating a basic Recipe"""
         payload = {"title": "Vietnamese Cake",
                    "time_minutes": 45,
-                   "price": 5.00}
-
+                   "price": 5.55}
         res = self.client.post(RECIPE_URL, payload)
         recipe = Recipe.objects.get(id=res.data['id'])
         for key in payload.keys():
-            self.assertEqual(payload[key], getattr(recipe, key))
+            if key == "price":
+                self.assertEqual(round(Decimal(payload[key]), 2), getattr(recipe, key))
+            else:
+                self.assertEqual(payload[key], getattr(recipe, key))
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
     def test_creating_recipe_with_tags(self):
@@ -242,3 +245,42 @@ class RecipeImageAPI(TestCase):
         res = self.client.post(url, {"image": "not_image"}, format="multipart")
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_filtering_recipes_with_tags(self):
+        """Testing that only te recipes with tags are getting retrieved"""
+        recipe1 = create_sample_recipe(user=self.user, title="Chicken tikka")
+        recipe2 = create_sample_recipe(user=self.user, title="Italian pasta")
+        recipe3 = create_sample_recipe(user=self.user, title="Vegan dessert")
+
+        tag1 = create_sample_tag(user=self.user, name="Grill")
+        tag2 = create_sample_tag(user=self.user, name="Light food")
+
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+
+        res = self.client.get( RECIPE_URL, {"tags": f"{tag1.id}, {tag2.id}"})
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(recipe1, res.data)
+        self.assertIn(recipe2, res.data)
+        self.assertNotIn(recipe3, res.data)
+
+    def test_filtering_recipes_with_ingredients(self):
+        """Testing that only the recipes with ingredients are getting retrieved"""
+        recipe1 = create_sample_recipe(user=self.user, title="Chicken tikka")
+        recipe2 = create_sample_recipe(user=self.user, title="Italian pasta")
+        recipe3 = create_sample_recipe(user=self.user, title="Vegan dessert")
+
+        ingredient1 = create_sample_ingredient(user=self.user, name="Chicken")
+        ingredient2 = create_sample_ingredient(user=self.user, name="Pasta")
+
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+
+        res = self.client.get(RECIPE_URL, {"ingredients": f"{ingredient1.id}, {ingredient2.id}"})
+
+        self.assertTrue(res.status_code, status.HTTP_200_OK)
+        self.assertIn(recipe1, res.data)
+        self.assertIn(recipe2, res.data)
+        self.assertNotIn(recipe3, res.data)
+
