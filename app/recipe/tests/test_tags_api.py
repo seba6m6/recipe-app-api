@@ -86,7 +86,7 @@ class PrivateTagsApiTests(TestCase):
             price=17.99,
             user=self.user
         )
-        tag1 = Tag.object.create(
+        tag1 = Tag.objects.create(
             name="Chilly",
             user=self.user
         )
